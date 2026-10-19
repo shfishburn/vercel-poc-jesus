@@ -119,15 +119,20 @@ const PrayerVolumeIndicator = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <motion.div
-          className="w-2 h-2 rounded-full bg-green-500"
-          animate={{ opacity: [1, 0.3, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        />
-        <span className="text-xs font-bold text-foreground uppercase tracking-wider font-special-elite">
-          Live Switchboard Status
-        </span>
+      <div className="mb-3 space-y-1">
+        <div className="flex items-center gap-2">
+          <motion.div
+            className="w-2 h-2 rounded-full bg-green-500"
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          <span className="text-xs font-bold text-foreground uppercase tracking-wider font-special-elite">
+            Switchboard Status (simulated)
+          </span>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          Simulated for atmosphere. No real caller data.
+        </p>
       </div>
       <div className="grid grid-cols-2 gap-3 text-center">
         <Stat label="Prayer Volume" value={volume} highlight />
