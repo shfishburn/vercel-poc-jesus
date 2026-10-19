@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.ai-incidents]
 verify_jwt = false
+
+[functions.community]
+verify_jwt = false

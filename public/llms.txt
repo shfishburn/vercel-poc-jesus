@@ -259,7 +259,7 @@ Call transcripts can be shared via unique URLs. Full receipt data (faith, depart
 - Prayer text is never stored on the server — responses are generated, returned, and discarded
 - Local-only persistence — prayer history, favorites, and preferences use Zustand stores backed by localStorage
 - Prayer Wall entries are ephemeral — designed to fade after 24 hours
-- Global activity indicators (live feed, volume indicator) use only broad city/region labels
+- Switchboard panels (ambience feed, status panel) are simulated in the browser and use no visitor data
 - Crisis page has zero analytics — no tracking scripts
 - Safety signals log mode and metadata only — never the prayer content itself
 
@@ -289,7 +289,7 @@ Call transcripts can be shared via unique URLs. Full receipt data (faith, depart
 
 ## Pages
 
-- [Home](https://holdforjesus.com/) — Landing page with hero, How It Works, live switchboard feed, prayer volume indicator, verse of the day, community CTA
+- [Home](https://holdforjesus.com/) — Landing page with hero, How It Works, simulated switchboard ambience and status panels, verse of the day, community CTA
 - [Pray](https://holdforjesus.com/pray) — 3-step prayer wizard with hold screen, typing animation, and AI call transcript response
 - [Community](https://holdforjesus.com/community) — Prayer Wall (submit & react to prayers) and Global Prayer Board (community causes)
 - [History](https://holdforjesus.com/history) — Local call history with faith/department badges, clickable to restore past responses

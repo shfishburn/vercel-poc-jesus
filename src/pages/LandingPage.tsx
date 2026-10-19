@@ -98,7 +98,7 @@ const LandingPage = () => {
           <HowItWorks />
         </section>
 
-        {/* Live Switchboard Status */}
+        {/* Switchboard Status (simulated) */}
         <section className="flex justify-center px-6 py-4">
           <PrayerVolumeIndicator />
         </section>

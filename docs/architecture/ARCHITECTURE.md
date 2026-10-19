@@ -305,7 +305,7 @@ A `pg_cron` job triggers the edge function every 6 hours via `pg_net`. Results a
 - **No accounts required** — the entire app works without authentication
 - **Prayer text is never stored on the server** — responses are generated, returned, and discarded
 - **Local-only persistence** — prayer history, favorites, and preferences use Zustand stores backed by `localStorage`
-- **Prayer Wall entries are ephemeral** — designed to fade after 24 hours
+- **Prayer Wall entries are ephemeral** — visible for 24 hours, then deleted by an hourly purge job
 - **Switchboard panels are simulated** — the Switchboard Ambience feed and the Switchboard Status panel generate random cities, actions, and numbers in the browser for atmosphere; they use no visitor data
 - **Crisis page has zero analytics** — no tracking scripts on that page
 - **Safety signals log mode + metadata only** — never the prayer content itself
