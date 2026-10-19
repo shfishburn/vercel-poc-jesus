@@ -18,6 +18,7 @@ import { useRateLimit } from "@/hooks/useRateLimit";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/analytics.ts";
 import { FAITHS, getFaith } from "@/lib/faiths";
+import { functionErrorMessage } from "@/lib/functionError";
 import { useFavoritesStore } from "@/stores/useFavoritesStore";
 import { usePrayerHistoryStore } from "@/stores/usePrayerHistoryStore";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
@@ -74,6 +75,7 @@ const PrayerPage = () => {
     initial?.currentRecordId || null,
   );
   const { toast } = useToast();
+  const [holdDone, setHoldDone] = useState(false);
 
   // Persist key state to sessionStorage
   useEffect(() => {
@@ -102,6 +104,12 @@ const PrayerPage = () => {
       setPhase("error");
       return;
     }
+    // Clear the previous call so a transfer or retry never shows a stale reply,
+    // and never skips the hold because the last hold already completed.
+    setAiResponse("");
+    setClosingPrayer(null);
+    setResponseMode("normal");
+    setHoldDone(false);
     setPhase("holding");
     setLoading(true);
     setLastError(null);
@@ -118,7 +126,7 @@ const PrayerPage = () => {
         },
       });
 
-      if (error) throw new Error(error.message || "Something went wrong.");
+      if (error) throw new Error(await functionErrorMessage(error));
 
       const reply = data?.reply || "The line went silent. Please try again.";
       setAiResponse(reply);
@@ -135,8 +143,9 @@ const PrayerPage = () => {
       });
     } catch (err: unknown) {
       console.error("Prayer error:", err);
-      const info = getErrorInfo(err);
-      setLastError(info.message);
+      const info = getErrorInfo(err instanceof Error ? err : null);
+      // Keep the server's own text; the category only picks the screen title.
+      setLastError(err instanceof Error && err.message ? err.message : info.message);
       setPhase("error");
       trackEvent("prayer_response_error", {
         faith_id: faithId,
@@ -179,8 +188,6 @@ const PrayerPage = () => {
     setDepartment(newDept);
     callPrayer(prayer.trim() || "Please help me", newDept, category);
   };
-
-  const [holdDone, setHoldDone] = useState(false);
 
   const onHoldComplete = useCallback(() => {
     setHoldDone(true);

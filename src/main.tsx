@@ -8,7 +8,7 @@ if (typeof crypto !== "undefined" && typeof crypto.randomUUID !== "function") {
       const random = (crypto.getRandomValues(new Uint8Array(1))[0] ?? 0) & 15;
       const value = char === "x" ? random : (random & 3) | 8;
       return value.toString(16);
-    });
+    }) as `${string}-${string}-${string}-${string}-${string}`;
 }
 
 const rootElement = document.getElementById("root");

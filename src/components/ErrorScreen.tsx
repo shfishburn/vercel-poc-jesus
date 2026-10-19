@@ -41,12 +41,29 @@ export function getErrorInfo(error?: string | Error | null) {
   const msg = typeof error === "string" ? error : error?.message || "";
   const lower = msg.toLowerCase();
 
-  if (lower.includes("fetch") || lower.includes("network") || lower.includes("offline"))
+  if (
+    lower.includes("fetch") ||
+    lower.includes("network") ||
+    lower.includes("offline") ||
+    lower.includes("failed to send")
+  )
     return ERROR_MESSAGES.network;
   if (lower.includes("timeout") || lower.includes("timed out")) return ERROR_MESSAGES.timeout;
-  if (lower.includes("429") || lower.includes("rate") || lower.includes("jammed"))
+  if (
+    lower.includes("429") ||
+    lower.includes("rate") ||
+    lower.includes("jammed") ||
+    lower.includes("busy")
+  )
     return ERROR_MESSAGES.rateLimit;
-  if (lower.includes("500") || lower.includes("server") || lower.includes("gateway"))
+  if (
+    lower.includes("500") ||
+    lower.includes("server") ||
+    lower.includes("gateway") ||
+    lower.includes("relay") ||
+    lower.includes("unavailable") ||
+    lower.includes("budget")
+  )
     return ERROR_MESSAGES.server;
   return ERROR_MESSAGES.default;
 }

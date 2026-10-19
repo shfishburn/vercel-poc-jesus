@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "prebuild": "node scripts/generate-og-images.mjs",
-    "build": "vite build",
+    "build": "npm run typecheck && vite build",
     "postbuild": "test -n \"$VERCEL\" || react-snap",
     "build:dev": "vite build --mode development",
     "lint": "biome check .",
@@ -27,6 +27,7 @@
     "prepare": "husky",
     "preview": "vite preview",
     "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test:watch": "vitest"
   },
   "dependencies": {
