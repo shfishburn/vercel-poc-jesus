@@ -9,9 +9,16 @@ import {
   missingSupabaseEnvMessage,
   supabase,
 } from "@/integrations/supabase/client";
+import { functionErrorMessage } from "@/lib/functionError";
 import { getSessionId } from "@/lib/sessionId";
+import {
+  MAX_PRAYER_LENGTH,
+  type PrayerTextRejection,
+  validatePrayerText,
+} from "../../supabase/functions/_shared/community-rules.ts";
 
 const SESSION_ID = getSessionId();
+const WALL_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const REACTIONS = [
   { type: "candle", emoji: "🕯️", label: "Light a Candle" },
@@ -25,11 +32,6 @@ const CANDLE_MESSAGES = [
   "A candle has been lit.\nSometimes light is the only prayer that fits.",
   "Your light joins the others.\nSmall flames, together, illuminate.",
 ];
-
-const PROFANITY_PATTERNS =
-  /\b(fuck|shit|damn|ass|bitch|cunt|dick|cock|pussy|nigger|faggot|retard)\b/i;
-const CRISIS_PATTERNS =
-  /\b(kill\s*(my|him|her|them)?self|end\s*my\s*life|want\s*to\s*die|suicid|self[- ]?harm|no\s*reason\s*to\s*live|hopeless)\b/i;
 
 interface WallPrayer {
   id: string;
@@ -63,20 +65,17 @@ const PrayerWall = () => {
       return;
     }
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const { count, error: countError } = await supabase
-      .from("prayer_wall_reactions")
-      .select("*", { count: "exact", head: true })
-      .eq("reaction_type", "candle")
-      .gte("created_at", todayStart.toISOString());
+    const { data, error: countError } = await supabase.functions.invoke<{ count: number }>(
+      "community",
+      { body: { action: "candles_today" } },
+    );
 
     if (countError) {
-      setError("Unable to load live candle count right now.");
+      setError(await functionErrorMessage(countError));
       return;
     }
 
-    if (count !== null) setCandlesToday(count);
+    setCandlesToday(data?.count ?? 0);
   }, []);
 
   const fetchPrayers = useCallback(async () => {
@@ -89,6 +88,7 @@ const PrayerWall = () => {
     const { data, error: prayersError } = await supabase
       .from("prayer_wall")
       .select("*")
+      .gte("created_at", new Date(Date.now() - WALL_WINDOW_MS).toISOString())
       .order("created_at", { ascending: false })
       .limit(30);
 
@@ -109,29 +109,56 @@ const PrayerWall = () => {
   const fetchMyReactions = useCallback(async () => {
     if (!isSupabaseConfigured) return;
 
-    const { data, error: reactionsError } = await supabase
-      .from("prayer_wall_reactions")
-      .select("prayer_id, reaction_type")
-      .eq("session_id", SESSION_ID);
+    const { data, error: reactionsError } = await supabase.functions.invoke<{
+      reactions: { prayer_id: string; reaction_type: string }[];
+    }>("community", { body: { action: "my_reactions", sessionId: SESSION_ID } });
 
-    if (reactionsError) return;
+    if (reactionsError) {
+      toast({
+        title: "Error",
+        description: await functionErrorMessage(reactionsError),
+        variant: "destructive",
+      });
+      return;
+    }
 
-    if (data)
-      setReactedSet(
-        new Set(
-          data.map(
-            (r: { prayer_id: string; reaction_type: string }) =>
-              `${r.prayer_id}:${r.reaction_type}`,
-          ),
-        ),
-      );
-  }, []);
+    setReactedSet(new Set((data?.reactions ?? []).map((r) => `${r.prayer_id}:${r.reaction_type}`)));
+  }, [toast]);
 
   useEffect(() => {
     fetchPrayers();
     fetchMyReactions();
     fetchCandlesToday();
   }, [fetchPrayers, fetchMyReactions, fetchCandlesToday]);
+
+  const rejectPrayer = (reason: PrayerTextRejection) => {
+    switch (reason) {
+      case "empty":
+        return;
+      case "too_long":
+        toast({
+          title: "Too long",
+          description: `Keep it under ${MAX_PRAYER_LENGTH} characters.`,
+          variant: "destructive",
+        });
+        return;
+      case "crisis":
+        toast({
+          title: "Immediate help available",
+          description: "If this is urgent, call or text 988 now. Opening crisis resources.",
+          variant: "destructive",
+        });
+        navigate("/crisis");
+        return;
+      case "profanity":
+        toast({
+          title: "Content filtered",
+          description: "Please keep your prayer respectful.",
+          variant: "destructive",
+        });
+        return;
+    }
+  };
 
   const handleSubmit = async () => {
     if (!isSupabaseConfigured) {
@@ -143,41 +170,22 @@ const PrayerWall = () => {
       return;
     }
 
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    if (trimmed.length > 300) {
-      toast({
-        title: "Too long",
-        description: "Keep it under 300 characters.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (CRISIS_PATTERNS.test(trimmed)) {
-      toast({
-        title: "Immediate help available",
-        description: "If this is urgent, call or text 988 now. Opening crisis resources.",
-        variant: "destructive",
-      });
-      navigate("/crisis");
-      return;
-    }
-    if (PROFANITY_PATTERNS.test(trimmed)) {
-      toast({
-        title: "Content filtered",
-        description: "Please keep your prayer respectful.",
-        variant: "destructive",
-      });
+    const result = validatePrayerText(text);
+    if (result.ok === false) {
+      rejectPrayer(result.reason);
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("prayer_wall").insert({ prayer_text: trimmed });
+    const { error } = await supabase.functions.invoke("community", {
+      body: { action: "post_prayer", text: result.text },
+    });
     if (error) {
-      toast({
-        title: "Error",
-        description: "Couldn't share your prayer. Try again.",
-        variant: "destructive",
-      });
+      const message = await functionErrorMessage(error);
+      if (message === "crisis" || message === "profanity") {
+        rejectPrayer(message);
+      } else {
+        toast({ title: "Error", description: message, variant: "destructive" });
+      }
     } else {
       toast({ title: "Shared 🙏", description: "Your prayer is on the wall." });
       setText("");
@@ -224,27 +232,30 @@ const PrayerWall = () => {
       setTimeout(() => setCandleFlash(null), 3500);
     }
 
-    const { error: insertError } = await supabase
-      .from("prayer_wall_reactions")
-      .insert({ prayer_id: prayerId, session_id: SESSION_ID, reaction_type: reactionType });
+    const { data, error: reactError } = await supabase.functions.invoke<{
+      ok: boolean;
+      reason?: "already_reacted";
+    }>("community", {
+      body: { action: "react", prayerId, reactionType, sessionId: SESSION_ID },
+    });
 
-    if (insertError) {
+    if (reactError) {
       // Revert optimistic update on failure
       setReactedSet(prevReactedSet);
       setPrayers(prevPrayers);
       setCandlesToday(prevCandlesToday);
       toast({
         title: "Error",
-        description: "Couldn't save your reaction. Try again.",
+        description: await functionErrorMessage(reactError),
         variant: "destructive",
       });
       return;
     }
 
-    await supabase.rpc("increment_prayer_reaction", {
-      p_prayer_id: prayerId,
-      p_reaction_type: reactionType,
-    });
+    if (data?.ok === false) {
+      setPrayers(prevPrayers);
+      setCandlesToday(prevCandlesToday);
+    }
   };
 
   const timeAgo = (dateStr: string) => {
@@ -308,13 +319,15 @@ const PrayerWall = () => {
           >
             <Textarea
               value={text}
-              onChange={(e) => setText(e.target.value.slice(0, 300))}
+              onChange={(e) => setText(e.target.value.slice(0, MAX_PRAYER_LENGTH))}
               placeholder="Share a prayer or reflection anonymously…"
               className="resize-none text-sm"
               rows={3}
             />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{text.length}/300</span>
+              <span className="text-xs text-muted-foreground">
+                {text.length}/{MAX_PRAYER_LENGTH}
+              </span>
               <Button size="sm" onClick={handleSubmit} disabled={submitting || !text.trim()}>
                 {submitting ? "Sharing…" : "Share Anonymously"}
               </Button>

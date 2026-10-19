@@ -6,6 +6,7 @@ import {
   missingSupabaseEnvMessage,
   supabase,
 } from "@/integrations/supabase/client";
+import { functionErrorMessage } from "@/lib/functionError";
 import { getSessionId } from "@/lib/sessionId";
 
 const SESSION_ID = getSessionId();
@@ -109,11 +110,20 @@ const GlobalPrayerBoard = () => {
   const fetchMyVotes = useCallback(async () => {
     if (!isSupabaseConfigured) return;
 
-    const { data, error: votesError } = await supabase.rpc("get_session_votes", {
-      p_session_id: SESSION_ID,
-    });
-    if (!votesError && data) setVotedSet(new Set(data as string[]));
-  }, []);
+    const { data, error: votesError } = await supabase.functions.invoke<{ issueIds: string[] }>(
+      "community",
+      { body: { action: "my_votes", sessionId: SESSION_ID } },
+    );
+    if (votesError) {
+      toast({
+        title: "Error",
+        description: await functionErrorMessage(votesError),
+        variant: "destructive",
+      });
+      return;
+    }
+    setVotedSet(new Set(data?.issueIds ?? []));
+  }, [toast]);
 
   useEffect(() => {
     fetchIssues();
@@ -139,14 +149,14 @@ const GlobalPrayerBoard = () => {
     );
     setConfirming(issueId);
     setTimeout(() => setConfirming(null), 4000);
-    const { error } = await supabase.rpc("add_prayer_voice", {
-      p_issue_id: issueId,
-      p_session_id: SESSION_ID,
-    });
+    const { data, error } = await supabase.functions.invoke<{ ok: boolean; added: boolean }>(
+      "community",
+      { body: { action: "vote", issueId, sessionId: SESSION_ID } },
+    );
     if (error) {
       toast({
         title: "Error",
-        description: "Couldn't add your voice. Try again.",
+        description: await functionErrorMessage(error),
         variant: "destructive",
       });
       setVotedSet((prev) => {
@@ -154,6 +164,10 @@ const GlobalPrayerBoard = () => {
         next.delete(issueId);
         return next;
       });
+      fetchIssues();
+      return;
+    }
+    if (data?.added === false) {
       fetchIssues();
     }
   };

@@ -305,7 +305,7 @@ A `pg_cron` job triggers the edge function every 6 hours via `pg_net`. Results a
 - **No accounts required** — the entire app works without authentication
 - **Prayer text is never stored on the server** — responses are generated, returned, and discarded
 - **Local-only persistence** — prayer history, favorites, and preferences use Zustand stores backed by `localStorage`
-- **Prayer Wall entries are ephemeral** — designed to fade after 24 hours
+- **Prayer Wall entries are ephemeral** — visible for 24 hours, then deleted by an hourly purge job
 - **Global activity indicators** (live feed, volume indicator) use only broad city/region labels
 - **Crisis page has zero analytics** — no tracking scripts on that page
 - **Safety signals log mode + metadata only** — never the prayer content itself
