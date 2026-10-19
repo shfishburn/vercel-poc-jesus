@@ -13,6 +13,7 @@ const corsHeaders = {
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 10;
+const OPENROUTER_MODEL = "google/gemini-3.8-flash";
 const OPENROUTER_TIMEOUT_MS = 12_000;
 const OPENROUTER_MAX_RETRIES = 2;
 
@@ -701,7 +702,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-001",
+        model: OPENROUTER_MODEL,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: message },
@@ -751,7 +752,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.0-flash-001",
+            model: OPENROUTER_MODEL,
             messages: [
               { role: "system", content: closingSystemPrompt },
               { role: "user", content: `Caller's prayer request:\n${message}\n\nOperator's response:\n${reply}` },

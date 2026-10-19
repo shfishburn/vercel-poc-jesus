@@ -145,7 +145,7 @@ The prayer system uses a **single edge function with a 6-section modular archite
 │ Section 6: Request Handler                          │
 │   6A: Validate (IP, message length, API key)        │
 │   6B: Classify + build prompt                       │
-│   6C: Call AI Gateway (Gemini 3 Flash)              │
+│   6C: Call AI Gateway (Gemini 3.8 Flash)            │
 │   6D: Post-process ([TROLL] prefix detection)       │
 │   6E: Generate closing prayer (parallel)            │
 │   6F: Log analytics + safety signals (fire-forget)  │
@@ -179,7 +179,7 @@ Closing prayers are skipped for crisis, troll, and off-topic modes.
 
 ### AI Gateway
 
-AI calls use Google Gemini 3 Flash via Supabase Edge Functions. Rate limits (429) and upstream errors are caught and surfaced as themed error messages ("The lines are jammed").
+AI calls use Google Gemini 3.8 Flash through OpenRouter from Supabase Edge Functions. Rate limits (429) and upstream errors are caught and surfaced as themed error messages ("The lines are jammed").
 
 ---
 
@@ -322,7 +322,7 @@ A `pg_cron` job triggers the edge function every 6 hours via `pg_net`. Results a
 | **State** | Zustand (local persistence) |
 | **Audio** | Web Audio API (procedural hold music, typewriter sounds) |
 | **Backend** | Supabase Edge Functions (Deno) |
-| **AI** | Google Gemini 3 Flash |
+| **AI** | Google Gemini 3.8 Flash (via OpenRouter) |
 | **Database** | PostgreSQL (via Supabase) |
 | **Scheduling** | pg_cron + pg_net (6-hour data refresh) |
 | **Error Handling** | Global Error Boundary with themed fallback |

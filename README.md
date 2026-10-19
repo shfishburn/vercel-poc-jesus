@@ -29,7 +29,7 @@ It's absurd on purpose. The real question underneath: **if an AI can't handle so
 | UI | shadcn/ui (Radix primitives) |
 | State | Zustand (local persistence) |
 | Backend | Supabase Edge Functions (Deno) |
-| AI | Google Gemini 3 Flash |
+| AI | Google Gemini 3.8 Flash (via OpenRouter) |
 | Database | PostgreSQL (via Supabase) |
 | Hosting | Vercel |
 | SEO | Vercel Edge Middleware (bot-aware meta injection) |
