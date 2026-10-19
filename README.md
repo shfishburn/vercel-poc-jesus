@@ -92,6 +92,8 @@ supabase db push
 npm run types:supabase
 ```
 
+The 6-hour `pg_cron` refresh jobs read the project's anon key from Supabase Vault at run time, so no migration contains the key. Once per project, run `select vault.create_secret('<anon key>', 'supabase_anon_key');` in the SQL editor before pushing migrations. If the secret is missing, the migration still applies, prints that command as a notice, and skips scheduling; create the secret and run that migration's SQL again.
+
 ### Available scripts
 
 | Script | Description |
