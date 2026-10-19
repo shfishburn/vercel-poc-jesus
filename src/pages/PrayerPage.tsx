@@ -67,6 +67,7 @@ const PrayerPage = () => {
   const [prayer, setPrayer] = useState(initial?.prayer || "");
   const [aiResponse, setAiResponse] = useState(initial?.aiResponse || "");
   const [closingPrayer, setClosingPrayer] = useState<string | null>(initial?.closingPrayer || null);
+  const [closingPrayerError, setClosingPrayerError] = useState<string | null>(null);
   const [responseMode, setResponseMode] = useState<string>(initial?.responseMode || "normal");
   const [loading, setLoading] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -108,6 +109,7 @@ const PrayerPage = () => {
     // and never skips the hold because the last hold already completed.
     setAiResponse("");
     setClosingPrayer(null);
+    setClosingPrayerError(null);
     setResponseMode("normal");
     setHoldDone(false);
     setPhase("holding");
@@ -131,6 +133,7 @@ const PrayerPage = () => {
       const reply = data?.reply || "The line went silent. Please try again.";
       setAiResponse(reply);
       setClosingPrayer(data?.closingPrayer || null);
+      setClosingPrayerError(data?.closingPrayerError || null);
       setResponseMode(data?.mode || "normal");
       const record = addRecord(msg, reply, faithId, dept, cat || undefined);
       setCurrentRecordId(record.id);
@@ -329,10 +332,12 @@ const PrayerPage = () => {
               mode={responseMode}
               onHangUp={reset}
               closingPrayer={closingPrayer}
+              closingPrayerError={closingPrayerError}
               onCallAgain={() => {
                 setAiResponse("");
                 setPrayer("");
                 setClosingPrayer(null);
+                setClosingPrayerError(null);
                 setResponseMode("normal");
                 setHoldDone(false);
                 setCurrentRecordId(null);

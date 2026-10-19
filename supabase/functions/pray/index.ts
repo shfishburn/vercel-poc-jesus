@@ -15,6 +15,7 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 10;
 const OPENROUTER_MODEL = "google/gemini-3.8-flash";
 const OPENROUTER_TIMEOUT_MS = 12_000;
+const CLOSING_PRAYER_TIMEOUT_MS = 30_000;
 const OPENROUTER_MAX_RETRIES = 2;
 
 function delay(ms: number): Promise<void> {
@@ -744,7 +745,10 @@ serve(async (req) => {
 
     // ── 6E. Generate closing prayer (parallel with analytics) ─────
     const skipClosingPrayer = mode === "crisis" || mode === "troll" || mode === "off_topic";
-    const closingPrayerPromise = skipClosingPrayer ? Promise.resolve(null) : (async () => {
+    type ClosingPrayerOutcome = { text: string | null; error: string | null };
+    const closingPrayerPromise: Promise<ClosingPrayerOutcome> = skipClosingPrayer
+      ? Promise.resolve({ text: null, error: null })
+      : (async (): Promise<ClosingPrayerOutcome> => {
       try {
         const closingSystemPrompt = assembleClosingPrayerPrompt(faithKey);
         const prayerRes = await fetchWithTimeoutAndRetry("https://openrouter.ai/api/v1/chat/completions", {
@@ -761,16 +765,22 @@ serve(async (req) => {
             ],
             stream: false,
           }),
-        }, OPENROUTER_TIMEOUT_MS, 1);
+        }, CLOSING_PRAYER_TIMEOUT_MS, 1);
         if (!prayerRes.ok) {
           console.error("Closing prayer generation failed:", prayerRes.status);
-          return null;
+          return { text: null, error: `upstream_${prayerRes.status}` };
         }
         const prayerData = await prayerRes.json();
-        return prayerData.choices?.[0]?.message?.content || null;
+        const text = prayerData.choices?.[0]?.message?.content;
+        if (typeof text !== "string" || !text.trim()) {
+          console.error("Closing prayer generation returned no text");
+          return { text: null, error: "empty" };
+        }
+        return { text, error: null };
       } catch (err) {
         console.error("Closing prayer error (non-fatal):", err);
-        return null;
+        const timedOut = err instanceof Error && err.name === "AbortError";
+        return { text: null, error: timedOut ? "timeout" : "error" };
       }
     })();
 
@@ -834,10 +844,10 @@ serve(async (req) => {
     })() : Promise.resolve();
 
     // ── 6G. Respond ───────────────────────────────────────────────
-    const [closingPrayer] = await Promise.all([closingPrayerPromise, analyticsPromise, safetyPromise, wallPromise]);
+    const [closing] = await Promise.all([closingPrayerPromise, analyticsPromise, safetyPromise, wallPromise]);
 
     return new Response(
-      JSON.stringify({ reply, closingPrayer, mode }),
+      JSON.stringify({ reply, closingPrayer: closing.text, closingPrayerError: closing.error, mode }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

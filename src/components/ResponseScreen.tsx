@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useDingSound } from "@/hooks/useDingSound";
 import { trackEvent } from "@/lib/analytics.ts";
+import { describeClosingPrayerError } from "@/lib/closingPrayer";
 import type { FaithConfig } from "@/lib/faiths";
 import { formatBold } from "@/lib/formatBold";
 
@@ -15,6 +16,7 @@ interface ResponseScreenProps {
   prayer: string;
   response: string;
   closingPrayer?: string | null;
+  closingPrayerError?: string | null;
   currentDepartment: string;
   faith: FaithConfig;
   mode?: string;
@@ -42,6 +44,7 @@ const ResponseScreen = ({
   prayer,
   response,
   closingPrayer,
+  closingPrayerError,
   currentDepartment,
   faith,
   mode = "normal",
@@ -260,6 +263,23 @@ const ResponseScreen = ({
               {formatBold(closingPrayer)}
             </p>
           </div>
+        </motion.div>
+      )}
+
+      {!isDeflection && !closingPrayer && closingPrayerError && (
+        <motion.div
+          className="w-full max-w-lg bg-card border border-dashed border-border rounded-lg p-5 shadow-sm space-y-2"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          role="status"
+        >
+          <span className="text-xs text-muted-foreground uppercase tracking-widest">
+            🙏 Closing Prayer
+          </span>
+          <p className="text-sm text-muted-foreground">
+            {describeClosingPrayerError(closingPrayerError)} Press Try Again to request another.
+          </p>
         </motion.div>
       )}
 
