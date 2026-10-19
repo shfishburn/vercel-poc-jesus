@@ -132,11 +132,16 @@ const LiveSwitchboardFeed = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs">🌍</span>
-        <span className="text-xs font-bold text-foreground uppercase tracking-wider font-special-elite">
-          Live Switchboard
-        </span>
+      <div className="mb-3 space-y-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xs">🌍</span>
+          <span className="text-xs font-bold text-foreground uppercase tracking-wider font-special-elite">
+            Switchboard Ambience
+          </span>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          Simulated for atmosphere. No real caller data.
+        </p>
       </div>
       <div className="space-y-1.5 overflow-hidden">
         <AnimatePresence initial={false} mode="popLayout">

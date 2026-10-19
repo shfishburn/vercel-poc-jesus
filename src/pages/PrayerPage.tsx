@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import DepartmentSelector from "@/components/DepartmentSelector";
 import ErrorScreen, { getErrorInfo } from "@/components/ErrorScreen";
 import FaithSelector from "@/components/FaithSelector";
@@ -19,6 +19,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/analytics.ts";
 import { FAITHS, getFaith } from "@/lib/faiths";
 import { functionErrorMessage } from "@/lib/functionError";
+import {
+  PRAYER_PAGE_STATE_KEY,
+  readStoredPrayerState,
+  shouldRestorePrayerState,
+} from "@/lib/prayerPageState";
 import { useFavoritesStore } from "@/stores/useFavoritesStore";
 import { usePrayerHistoryStore } from "@/stores/usePrayerHistoryStore";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
@@ -49,19 +54,14 @@ const PrayerPage = () => {
   const { addRecord, rateRecord } = usePrayerHistoryStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
 
-  // Only restore state from sessionStorage when returning via browser back/forward
-  // (popstate). Fresh navigations (clicking links/buttons) start clean.
-  const isPopState =
-    typeof window !== "undefined" &&
-    window.performance?.getEntriesByType("navigation")?.[0] &&
-    (window.performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming).type ===
-      "back_forward";
-  const stored = isPopState ? sessionStorage.getItem("prayerPageState") : null;
-  const initial = stored ? JSON.parse(stored) : null;
+  const navigationType = useNavigationType();
+  const initial = shouldRestorePrayerState(navigationType)
+    ? readStoredPrayerState(sessionStorage)
+    : null;
 
   const [phase, setPhase] = useState<Phase>(
     initial?.phase && initial.phase !== "holding" && initial.phase !== "typing"
-      ? initial.phase
+      ? (initial.phase as Phase)
       : "step1",
   );
   const [prayer, setPrayer] = useState(initial?.prayer || "");
@@ -80,7 +80,7 @@ const PrayerPage = () => {
   // Persist key state to sessionStorage
   useEffect(() => {
     sessionStorage.setItem(
-      "prayerPageState",
+      PRAYER_PAGE_STATE_KEY,
       JSON.stringify({
         phase,
         prayer,
@@ -230,7 +230,7 @@ const PrayerPage = () => {
   }, [location.state, setCategory, setDepartment, setFaith]);
 
   const reset = () => {
-    sessionStorage.removeItem("prayerPageState");
+    sessionStorage.removeItem(PRAYER_PAGE_STATE_KEY);
     navigate("/");
   };
 
