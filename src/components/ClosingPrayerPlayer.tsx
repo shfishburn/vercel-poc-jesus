@@ -17,7 +17,7 @@ interface ClosingPrayerPlayerProps {
 }
 
 const ClosingPrayerPlayer = ({ closingPrayer, department, faith }: ClosingPrayerPlayerProps) => {
-  const { state, prefetching, prefetchReady, handlePlay, handleStop } = useTtsPlayer({
+  const { state, handlePlay, handleStop } = useTtsPlayer({
     text: closingPrayer,
     department,
     faith,
@@ -46,32 +46,18 @@ const ClosingPrayerPlayer = ({ closingPrayer, department, faith }: ClosingPrayer
             </Button>
           </motion.div>
         ) : (
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative">
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               variant="outline"
               onClick={handlePlay}
               disabled={state === "loading"}
-              className={`gap-2 relative overflow-hidden ${prefetching && state === "idle" ? "animate-pulse" : ""}`}
+              className="gap-2"
               aria-label={
                 state === "done" ? "Replay closing prayer audio" : "Hear closing prayer audio"
               }
             >
               🙏 {state === "done" ? "Replay Closing Prayer" : "Hear Closing Prayer"}
-              {prefetching && state === "idle" && (
-                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-muted-foreground/10 to-transparent animate-[shimmer_1.5s_infinite] pointer-events-none" />
-              )}
             </Button>
-            {prefetchReady && state === "idle" && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold shadow-sm"
-                aria-label="Audio ready"
-              >
-                ✓
-              </motion.span>
-            )}
           </motion.div>
         )}
       </div>
