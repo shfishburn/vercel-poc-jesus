@@ -43,6 +43,7 @@
         "npm:@types/node@^22.16.5",
         "npm:@types/react-dom@^18.3.7",
         "npm:@types/react@^18.3.23",
+        "npm:@vercel/analytics@^1.6.1",
         "npm:@vitejs/plugin-react-swc@^3.11.0",
         "npm:autoprefixer@^10.4.21",
         "npm:class-variance-authority@~0.7.1",
