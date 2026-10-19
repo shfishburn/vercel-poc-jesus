@@ -239,6 +239,17 @@ const DEFAULT_VOICE: VoiceProfile = {
   pickupLine: "Heavenly Support Center, how can we help?",
 };
 
+/** ElevenLabs error bodies carry a machine code at detail.status (e.g. "quota_exceeded"). */
+function providerErrorCode(body: string): string | null {
+  try {
+    const parsed = JSON.parse(body) as { detail?: { status?: unknown } | string };
+    if (typeof parsed.detail === "string") return parsed.detail;
+    return typeof parsed.detail?.status === "string" ? parsed.detail.status : null;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -339,10 +350,17 @@ serve(async (req) => {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error("TTS provider error:", response.status, errorBody);
-      return new Response(JSON.stringify({ error: "TTS generation failed" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "TTS generation failed",
+          upstreamStatus: response.status,
+          upstreamCode: providerErrorCode(errorBody),
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const audioBuffer = await response.arrayBuffer();
