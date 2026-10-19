@@ -8,6 +8,3 @@ verify_jwt = false
 
 [functions.ai-incidents]
 verify_jwt = false
-
-[functions.migrate-data]
-verify_jwt = false
